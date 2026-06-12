@@ -108,6 +108,27 @@ def calculate_molecular_weight(formula):
     return round(total, 2)
 
 
+def calculate_composition(formula):
+    elements = parse_formula(formula)
+    if not elements:
+        raise ValueError("化学式解析结果为空")
+    total = 0.0
+    elem_masses = []
+    for elem, count in elements:
+        if elem not in ATOMIC_WEIGHTS:
+            raise ValueError(f"未知元素: {elem}")
+        mass = ATOMIC_WEIGHTS[elem] * count
+        elem_masses.append((elem, count, mass))
+        total += mass
+    if total == 0:
+        return []
+    composition = []
+    for elem, count, mass in elem_masses:
+        pct = round(mass / total * 100, 2)
+        composition.append((elem, count, mass, pct))
+    return composition
+
+
 def main():
     if len(sys.argv) > 1:
         formulas = sys.argv[1:]
@@ -125,11 +146,13 @@ def main():
             if not formula:
                 continue
             try:
-                elements = parse_formula(formula)
-                expanded = " + ".join(f"{e}×{c}" for e, c in elements)
                 weight = calculate_molecular_weight(formula)
-                print(f"  展开: {expanded}")
-                print(f"  分子量: {weight:.2f} g/mol\n")
+                composition = calculate_composition(formula)
+                print(f"  分子量: {weight:.2f} g/mol")
+                print(f"  元素组成:")
+                for elem, count, mass, pct in composition:
+                    print(f"    {elem:2s}  {count:>3d}个  {mass:>10.4f}  {pct:>6.2f}%")
+                print()
             except ValueError as e:
                 print(f"  错误: {e}\n")
         return
@@ -137,7 +160,10 @@ def main():
     for formula in formulas:
         try:
             weight = calculate_molecular_weight(formula)
+            composition = calculate_composition(formula)
             print(f"{formula}: {weight:.2f} g/mol")
+            for elem, count, mass, pct in composition:
+                print(f"  {elem:2s}  {pct:>6.2f}%")
         except ValueError as e:
             print(f"{formula}: 错误 - {e}")
 
